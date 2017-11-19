@@ -7,18 +7,17 @@ module Interpreter
     )
 where
 
-import Data.Text
-import Control.Monad(forever)
-import Data.Monoid((<>))
-
-import Syntax
+import           Control.Monad (forever)
+import           Data.Monoid   ((<>))
+import           Data.Text
+import           Syntax
 
 data Command = Exit
-             | SqlStatement Statement
+             | Either Text SqlStatement
   deriving (Eq, Show)
 
 interpret :: Text -> Command
-interpret ".exit" = Exit
+interpret ".exit"   = Exit
 interpret statement = SqlStatement (parse statement)
 
 console :: IO ()

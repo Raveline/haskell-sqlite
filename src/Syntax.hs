@@ -1,50 +1,54 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Syntax
-    (
-      parse,
-      Statement(..), Select(..), Insert(..)
-    )
-where
+module Test where
 
-import qualified Data.List as DL
-import qualified Data.List.Split as DLS
-import qualified Data.Text as DT
+import Data.Maybe
+import Data.Monoid
+import Data.Text
+import Text.Parsec
+import Text.Parsec.Char
 
-data Select = Select DT.Text deriving (Eq, Show)
-data From = From DT.Text deriving (Eq, Show)
-data Where = Where DT.Text deriving (Eq, Show)
-data Insert = Insert DT.Text deriving (Eq, Show)
-data Values = Values DT.Text deriving (Eq, Show)
+newtype Select = Select Text deriving (Eq, Show)
+newtype From = From Text deriving (Eq, Show)
+newtype Where = Where Text deriving (Eq, Show)
+newtype Unknown = Unknown Text deriving (Eq, Show)
+data SqlStatement = SelectStmt Select From Where
+                  | InvalidStmt Text
+   deriving (Eq, Show)
 
-data Statement = SelectStmt Select From Where
-               | InsertStmt Insert Values
-               | Invalid DT.Text
-  deriving (Eq, Show)
+selectParser :: Text -> Maybe Select
+selectParser statement = do
+   case parse parser "<STDIN>" statement of
+      Left err     -> Nothing
+      Right parsed -> Just (Select $ pack parsed)
+   where
+    parser = do
+        string "SELECT"
+        space
+        condition <- untilFrom
+        return condition
+    untilFrom = manyTill anyChar (try (string " FROM"))
 
--- SPEC
-parse :: DT.Text -> Statement
-parse = undefined;
--- parse statement
---   | isPrefixOf "select " statement      = SelectStmt (Select statement)
---   | isPrefixOf "insert into " statement = InsertStmt (Insert statement)
---   | otherwise                           = Invalid statement
+fromParser :: Text -> Maybe From
+fromParser statement = do
+    case parse parser "<STDIN>" statement of
+        Left err     -> Nothing
+        Right parsed -> Just (From $ pack parsed)
+    where
+     parser = do
+        manyTill anyChar (try (string "FROM"))
+        space
+        condition <- untilWhere
+        return condition
+     untilWhere = manyTill anyChar (try (string " WHERE"))
 
-
-trimSpaces :: String -> String
-trimSpaces s = DT.unpack $ DT.replace " " "" (DT.pack s)
-
-trimSemicolon :: String -> String
-trimSemicolon s = DT.unpack $ DT.replace ";" "" (DT.pack s)
-
--- SPEC
--- Select "column1 as A, column 2 as B"
--- From "table1, table2"
--- Where "table1.col = table2.col"
-sql = "select column1 as A, column 2 as B from table1, table2 where table1.col = table2.col;"
-
-whereClause :: String -> String
-whereClause sqlStatement = trimmedWhere
-  where trimmedWhere = trimSemicolon withoutSpaces
-        withoutSpaces = trimSpaces uglyWhere
-        uglyWhere = last splitOnWhere
-        splitOnWhere = DLS.split (DLS.onSublist "where") sqlStatement
+whereParser :: Text -> Maybe Where
+whereParser statement = do
+    case parse parser "<STDIN>" statement of
+        Left err     -> Nothing
+        Right parsed -> Just (Where $ pack parsed)
+    where
+     parser = do
+        manyTill anyChar (try (string "WHERE"))
+        space
+        condition <- many anyChar
+        return condition
