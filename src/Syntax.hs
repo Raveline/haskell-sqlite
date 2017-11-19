@@ -4,6 +4,7 @@ module Test where
 import Data.Maybe
 import Data.Monoid
 import Data.Text
+import Control.Monad
 import Text.Parsec
 import Text.Parsec.Char
 
@@ -14,6 +15,18 @@ newtype Unknown = Unknown Text deriving (Eq, Show)
 data SqlStatement = SelectStmt Select From Where
                   | InvalidStmt Text
    deriving (Eq, Show)
+
+sqlParser :: Text -> SqlStatement
+sqlParser statement = do
+    case parse parser "<STDIN>" statement of
+        Left err        -> InvalidStmt (pack $ show err)
+        Right (a, b, c) -> SelectStmt a b c
+        where
+          parser = do
+            selectPart <- fromJust $ selectParser statement
+            fromPart   <- fromJust $ fromParser statement
+            wherePart  <- fromJust $ whereParser statement
+            return (selectPart, fromPart, wherePart)
 
 selectParser :: Text -> Maybe Select
 selectParser statement = do
