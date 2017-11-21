@@ -19,7 +19,7 @@ library
                      , Syntax
   build-depends:       base
                      , text
-                     , split
+                     , parsec
   default-language:    Haskell2010
 
 executable haskell-sqlite-exe

@@ -13,12 +13,12 @@ import           Data.Text
 import           Syntax
 
 data Command = Exit
-             | Either Text SqlStatement
-  deriving (Eq, Show)
+             | Sql SqlStatement
+               deriving (Eq, Show)
 
 interpret :: Text -> Command
 interpret ".exit"   = Exit
-interpret statement = SqlStatement (parse statement)
+interpret statement = Sql (sqlParser statement)
 
 console :: IO ()
 console = do
@@ -26,7 +26,7 @@ console = do
   line <- getLine
   let output = interpret $ pack line
   case output of
-    Exit              -> putStrLn "bye !"
-    SqlStatement stmt -> do
-      putStrLn "Wow such statement !"
+    Exit     -> putStrLn "bye !"
+    Sql stmt -> do
+      putStrLn "Parsed o7"
       console
