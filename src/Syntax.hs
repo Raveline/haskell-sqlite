@@ -40,38 +40,30 @@ sqlParser sql = mapToSqlStatement sql selectPart fromPart wherePart
 
 selectParser :: Text -> Maybe Select
 selectParser statement = do
-   case parse parser "<STDIN>" statement of
+   case parse parser "<STDIN>" (unpack statement) of
       Left err     -> Nothing
-      Right parsed -> Just (Select $ pack parsed)
+      Right parsed -> Just (Select $ strip $ pack parsed)
    where
-    parser = do
-        string "SELECT"
-        space
-        condition <- untilFrom
-        return condition
-    untilFrom = manyTill anyChar (try (string " FROM"))
+    parser = string "SELECT" *> space >> untilFrom
 
 fromParser :: Text -> Maybe From
 fromParser statement = do
-    case parse parser "<STDIN>" statement of
+    case parse parser "<STDIN>" (unpack statement) of
         Left err     -> Nothing
-        Right parsed -> Just (From $ pack parsed)
+        Right parsed -> Just (From $ strip $ pack parsed)
     where
-     parser = do
-        manyTill anyChar (try (string "FROM"))
-        space
-        condition <- untilWhere
-        return condition
-     untilWhere = manyTill anyChar (try (string " WHERE"))
+     parser = untilFrom *> many1 space >> untilWhere
 
 whereParser :: Text -> Maybe Where
 whereParser statement = do
-    case parse parser "<STDIN>" statement of
+    case parse parser "<STDIN>" (unpack statement) of
         Left err     -> Nothing
         Right parsed -> Just (Where $ pack parsed)
     where
-     parser = do
-        manyTill anyChar (try (string "WHERE"))
-        space
-        condition <- many anyChar
-        return condition
+     parser = untilWhere *> space >> many anyChar
+
+untilKeyword :: String -> Parsec String () String
+untilKeyword keyword = manyTill anyChar (try (string keyword))
+
+untilFrom = untilKeyword "FROM"
+untilWhere = untilKeyword "WHERE"
