@@ -6,12 +6,8 @@ module Syntax
     )
 where
 
-import           Control.Monad
-import           Data.Maybe
-import           Data.Monoid
 import           Data.Text
 import           Text.Parsec
-import           Text.Parsec.Char
 
 newtype Select = Select Text
                  deriving (Eq, Show)
@@ -41,29 +37,30 @@ sqlParser sql = mapToSqlStatement sql selectPart fromPart wherePart
 selectParser :: Text -> Maybe Select
 selectParser statement = do
    case parse parser "<STDIN>" (unpack statement) of
-      Left err     -> Nothing
+      Left _       -> Nothing
       Right parsed -> Just (Select $ strip $ pack parsed)
    where
-    parser = string "SELECT" *> space >> untilFrom
+    parser = string "SELECT" *> space *> untilFrom
 
 fromParser :: Text -> Maybe From
 fromParser statement = do
     case parse parser "<STDIN>" (unpack statement) of
-        Left err     -> Nothing
+        Left _       -> Nothing
         Right parsed -> Just (From $ strip $ pack parsed)
     where
-     parser = untilFrom *> many1 space >> untilWhere
+     parser = untilFrom *> many1 space *> untilWhere
 
 whereParser :: Text -> Maybe Where
 whereParser statement = do
     case parse parser "<STDIN>" (unpack statement) of
-        Left err     -> Nothing
+        Left _       -> Nothing
         Right parsed -> Just (Where $ pack parsed)
     where
-     parser = untilWhere *> space >> many anyChar
+     parser = untilWhere *> space *> many anyChar
 
 untilKeyword :: String -> Parsec String () String
 untilKeyword keyword = manyTill anyChar (try (string keyword))
 
+untilWhere, untilFrom :: Parsec String () String
 untilFrom = untilKeyword "FROM"
 untilWhere = untilKeyword "WHERE"

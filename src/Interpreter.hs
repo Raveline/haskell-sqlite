@@ -7,8 +7,6 @@ module Interpreter
     )
 where
 
-import           Control.Monad (forever)
-import           Data.Monoid   ((<>))
 import           Data.Text
 import           Syntax
 
@@ -27,6 +25,6 @@ console = do
   let output = interpret $ pack line
   case output of
     Exit     -> putStrLn "bye !"
-    Sql stmt -> do
+    Sql _ -> do
       putStrLn "Parsed o7"
       console
